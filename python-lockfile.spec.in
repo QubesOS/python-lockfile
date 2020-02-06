@@ -1,0 +1,86 @@
+%global pypi_name lockfile
+
+%global common_description %{expand:
+The lockfile module exports a FileLock class which provides a simple API for
+locking files. Unlike the Windows msvcrt.locking function, the Unix
+fcntl.flock, fcntl.lockf and the deprecated posixfile module, the API is
+identical across both Unix (including Linux and Mac) and Windows platforms. The
+lock mechanism relies on the atomic nature of the link (on Unix) and mkdir (on
+Windows) system calls.}
+
+Name:           python-%{pypi_name}
+Summary:        Platform-independent file locking module
+Version:        @VERSION@
+Release:        1%{?dist}
+License:        MIT
+URL:            https://github.com/openstack/pylockfile
+Source0:        %{pypi_name}-%{version}.tar.gz
+
+BuildArch:      noarch
+
+BuildRequires:  python%{python3_pkgversion}-devel
+
+BuildRequires:  python%{python3_pkgversion}-nose
+BuildRequires:  python%{python3_pkgversion}-pbr
+BuildRequires:  python%{python3_pkgversion}-setuptools
+BuildRequires:  python%{python3_pkgversion}-sphinx
+
+%description %{common_description}
+
+
+%package -n     python%{python3_pkgversion}-%{pypi_name}
+Summary:        %{summary}
+%{?python_provide:%python_provide python%{python3_pkgversion}-%{pypi_name}}
+
+%description -n python%{python3_pkgversion}-%{pypi_name} %{common_description}
+
+
+%package -n     python-%{pypi_name}-doc
+Summary:        lockfile documentation
+%description -n python-%{pypi_name}-doc
+Documentation for lockfile
+
+
+%prep
+%autosetup -n %{pypi_name}-%{version}
+
+# Remove bundled egg-info
+rm -rf %{pypi_name}.egg-info
+
+# pbr isn't needed at runtime:
+# https://bugs.launchpad.net/pylockfile/+bug/1506679
+sed -i '/pbr/d' requirements.txt
+
+
+%build
+%py3_build
+
+# generate html docs
+PYTHONPATH=${PWD} sphinx-build-3.6 doc/source html
+
+# remove the sphinx-build leftovers
+rm -rf html/.{doctrees,buildinfo}
+
+
+%install
+%py3_install
+
+
+%check
+PYTHONPATH=$(pwd) nosetests-3.6
+
+
+%files -n python%{python3_pkgversion}-%{pypi_name}
+%license LICENSE
+%doc ACKS AUTHORS ChangeLog README.rst RELEASE-NOTES
+
+%{python3_sitelib}/%{pypi_name}/
+%{python3_sitelib}/%{pypi_name}-%{version}-py%{python3_version}.egg-info/
+
+%files -n python-%{pypi_name}-doc
+%doc html
+%license LICENSE
+
+
+%changelog
+@CHANGELOG@
